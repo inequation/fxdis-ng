@@ -29,16 +29,7 @@
 #ifndef SM4_H_
 #define SM4_H_
 
-#ifdef _MSC_VER
-   #include "msvc_stdint.h"
-   #pragma warning (disable: 4201 ) // warning C4201: nonstandard extension used : nameless struct/union
-   #pragma warning (disable: 4244 ) // warning C4244: '=' : conversion from 'uint32_t' to 'float', possible loss of data
-   #pragma warning (disable: 4100 ) // warning C4100: 'op' : unreferenced formal parameter
-   #pragma warning (disable: 4127 ) // warning C4127: conditional expression is constant
-#else
-   #include <stdint.h>
-#endif
-
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <memory>

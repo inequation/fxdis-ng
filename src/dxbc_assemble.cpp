@@ -24,11 +24,7 @@
  *
  **************************************************************************/
 
-#ifdef _MSC_VER
-#include "msvc_stdint.h"
-#else
 #include <stdint.h>
-#endif
 #include <string.h>
 #include "dxbc.h"
 

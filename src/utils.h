@@ -27,11 +27,7 @@
 #ifndef BYTESWAP_H_
 #define BYTESWAP_H_
 
-#ifdef _MSC_VER
-#include "msvc_stdint.h"
-#else
 #include <stdint.h>
-#endif
 #include <assert.h>
 
 #ifdef WORDS_BIGENDIAN
