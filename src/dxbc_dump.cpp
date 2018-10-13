@@ -24,20 +24,22 @@
  *
  **************************************************************************/
 
+#include "dxbc.h"
+#include <iomanip>
 #include <memory>
 #include <string.h>
-#include <iomanip>
-#include "dxbc.h"
 
-std::ostream& operator <<(std::ostream& out, const dxbc_container& container)
+std::ostream& operator<<(std::ostream& out, const dxbc_container& container)
 {
-   for(unsigned i = 0; i < container.chunks.size(); ++i)
-   {
-      struct dxbc_chunk_header* chunk = container.chunks[i];
-      char fourcc_str[5];
-      memcpy(fourcc_str, &chunk->fourcc, 4);
-      fourcc_str[4] = 0;
-      out << "# DXBC chunk " << std::setw(2) << i << ": " << fourcc_str << " offset " << ((char*)chunk - (char*)container.data) << " size " << bswap_le32(chunk->size) << "\n";
-   }
-   return out;
+	for (unsigned i = 0; i < container.chunks.size(); ++i)
+	{
+		struct dxbc_chunk_header* chunk = container.chunks[i];
+		char fourcc_str[5];
+		memcpy(fourcc_str, &chunk->fourcc, 4);
+		fourcc_str[4] = 0;
+		out << "# DXBC chunk " << std::setw(2) << i << ": " << fourcc_str
+			<< " offset " << ((char*)chunk - (char*)container.data) << " size "
+			<< bswap_le32(chunk->size) << "\n";
+	}
+	return out;
 }
