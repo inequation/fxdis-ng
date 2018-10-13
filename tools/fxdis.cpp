@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 #endif
     if ( !pFile )
     {
-       printf("Could not open file: %s\n", pFile );
+       printf("Could not open file: %s\n", argv[1] );
        return EXIT_FAILURE;
     }
 
