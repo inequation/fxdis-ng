@@ -276,7 +276,7 @@ struct sm4_op
 
    bool is_index_simple(unsigned i) const
    {
-       return !indices[i].reg.get() && indices[i].disp >= 0 && (int64_t)(int32_t)indices[i].disp == indices[i].disp;
+      return !indices[i].reg.get() && indices[i].disp >= 0 && (int64_t)(int32_t)indices[i].disp == indices[i].disp;
    }
 
    bool has_simple_index() const
@@ -315,6 +315,8 @@ struct sm4_insn : public sm4_token_instruction
    }
 
    void dump();
+
+   int indents() const;
 
 private:
    sm4_insn(const sm4_insn& op)
@@ -437,4 +439,3 @@ bool sm4_link_cf_insns(sm4_program& program);
 bool sm4_find_labels(sm4_program& program);
 
 #endif /* SM4_H_ */
-

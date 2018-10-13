@@ -89,6 +89,8 @@ std::ostream& dump_op_code(std::ostream& out, const sm4_op& op, const sm4_insn *
          case SM4_FILE_INDEXABLE_TEMP:
          case SM4_FILE_UNORDERED_ACCESS_VIEW:
          case SM4_FILE_THREAD_GROUP_SHARED_MEMORY:
+         case SM4_FILE_SAMPLER:
+         case SM4_FILE_RESOURCE:
             naked = true;
             break;
          default:
@@ -213,12 +215,12 @@ std::ostream& operator <<(std::ostream& out, const sm4_dcl& dcl)
       out << '[' << dcl.intf.array_length << ']';
       out << '[' << dcl.intf.table_length << "] = { ";
       for (unsigned i = 0; i < dcl.intf.table_length; i++)
-	  {
+      {
          if (i > 0)
             out << ", ";
          out << ((unsigned*)dcl.data)[i];
-	  }
-	  out << " }";
+      }
+      out << " }";
       break;
    default:
       break;
@@ -240,6 +242,9 @@ std::ostream& operator <<(std::ostream& out, const sm4_dcl& dcl)
    case SM4_OPCODE_DCL_INPUT_PS_SIV:
    case SM4_OPCODE_DCL_INPUT_PS_SGV:
       out << ", " << sm4_sv_names[dcl.num];
+      break;
+   case SM4_OPCODE_DCL_SAMPLER:
+      out << ", mode_" << (dcl.dcl_sampler.shadow ? "comparison" : (dcl.dcl_sampler.mono ? "mono" : "default"));
       break;
    }
 
@@ -291,8 +296,18 @@ std::ostream& operator <<(std::ostream& out, const sm4_program& program)
    for(unsigned i = 0; i < program.dcls.size(); ++i)
       out << *program.dcls[i] << "\n";
 
-   for(unsigned i = 0; i < program.insns.size(); ++i)
+   int indent = 0;
+   for (unsigned i = 0; i < program.insns.size(); ++i)
+   {
+      int new_indent = program.insns[i]->indents();
+      if (new_indent < 0)
+         indent += new_indent;
+      for (int j = 0; j < indent; ++j)
+         out << "  ";
       out << *program.insns[i] << "\n";
+      if (new_indent > 0)
+         indent += new_indent;
+   }
    return out;
 }
 
@@ -304,6 +319,23 @@ void sm4_op::dump()
 void sm4_insn::dump()
 {
    std::cout << *this;
+}
+
+int sm4_insn::indents() const
+{
+   switch (opcode)
+   {
+   case SM4_OPCODE_IF:
+   case SM4_OPCODE_LOOP:
+   case SM4_OPCODE_SWITCH:
+      return 1;
+   case SM4_OPCODE_ENDIF:
+   case SM4_OPCODE_ENDLOOP:
+   case SM4_OPCODE_ENDSWITCH:
+      return -1;
+   default:
+      return 0;
+   }
 }
 
 void sm4_dcl::dump()
