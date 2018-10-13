@@ -92,3 +92,110 @@ int dxbc_parse_signature(dxbc_chunk_signature* sig,
 	}
 	return count;
 }
+
+void dxbc_parse_resource_definition(dxbc_chunk_resource_definition* rdef,
+						 int& buffer_count,
+						 D3D11_SHADER_BUFFER_DESC** buffers,
+						 int& binding_count,
+						 D3D11_SHADER_INPUT_BIND_DESC** bindings,
+						 char** creator)
+{
+	unsigned count = bswap_le32(rdef->constant_buffer_count);
+	*buffers = (D3D11_SHADER_BUFFER_DESC*)malloc(
+		sizeof(D3D11_SHADER_BUFFER_DESC) * count);
+	const auto* cb = (dxbc_rdef_constant_buffer*)((char*)&rdef->constant_buffer_count + bswap_le32(rdef->constant_buffer_offset));
+
+	for (unsigned i = 0; i < count; ++i)
+	{
+		D3D11_SHADER_BUFFER_DESC& buffer = (*buffers)[i];
+		buffer.Name = (char*)&rdef->constant_buffer_count + bswap_le32(cb[i].name_offset);
+		buffer.Type = (D3D_CBUFFER_TYPE)bswap_le32(cb[i].type);
+		buffer.Variables = bswap_le32(cb[i].variable_count);
+		buffer.Size = bswap_le32(cb[i].size);
+		buffer.uFlags = bswap_le32(cb[i].flags);
+	}
+
+	buffer_count = count;
+
+	count = bswap_le32(rdef->resource_binding_count);
+	*bindings = (D3D11_SHADER_INPUT_BIND_DESC*)malloc(
+		sizeof(D3D11_SHADER_INPUT_BIND_DESC) * count);
+	auto* rb = (dxbc_rdef_binding*)((char*)&rdef->constant_buffer_count + bswap_le32(rdef->resource_binding_offset));
+	
+	for (unsigned i = 0; i < count; ++i)
+	{
+		D3D11_SHADER_INPUT_BIND_DESC& bind = (*bindings)[i];
+		bind.Name = (char*)&rdef->constant_buffer_count + bswap_le32(rb[i].name_offset);
+		bind.Type = (D3D_SHADER_INPUT_TYPE)bswap_le32(rb[i].input_type);
+		bind.BindPoint = bswap_le32(rb[i].bind_point);
+		bind.BindCount = bswap_le32(rb[i].bind_count);
+		bind.uFlags = bswap_le32(rb[i].flags);
+		bind.ReturnType = (D3D_RESOURCE_RETURN_TYPE)bswap_le32(rb[i].return_type);
+		bind.Dimension = (D3D_SRV_DIMENSION)bswap_le32(rb[i].dimension);
+		bind.NumSamples = bswap_le32(rb[i].sample_count);
+	}
+
+	binding_count = count;
+
+	if (creator)
+	{
+		*creator = (char*)&rdef->constant_buffer_count + bswap_le32(rdef->creator_offset);
+	}
+}
+
+int dxbc_parse_shader_variables(dxbc_chunk_resource_definition* rdef,
+						 unsigned buffer_index,
+						 D3D11_SHADER_TYPE_DESC** types,
+						 D3D11_SHADER_VARIABLE_DESC** variables)
+{
+	const auto& cb = ((dxbc_rdef_constant_buffer*)
+		((char*)&rdef->constant_buffer_count
+			+ bswap_le32(rdef->constant_buffer_offset)))
+		[buffer_index];
+	unsigned count = bswap_le32(cb.variable_count);
+	*variables = (D3D11_SHADER_VARIABLE_DESC*)malloc(
+		sizeof(D3D11_SHADER_VARIABLE_DESC) * count);
+	*types = (D3D11_SHADER_TYPE_DESC*)malloc(
+		sizeof(D3D11_SHADER_TYPE_DESC) * count);
+	const auto* v = (dxbc_rdef_variable*)((char*)&rdef->constant_buffer_count + bswap_le32(cb.variable_offset));
+
+	const bool is_rd1_1 = rdef->optional[0].fourcc == FOURCC('R', 'D', '1', '1');
+	
+	for (unsigned i = 0; i < count; ++i)
+	{
+		D3D11_SHADER_VARIABLE_DESC& var = (*variables)[i];
+		var.Name = (char*)&rdef->constant_buffer_count + bswap_le32(v[i].name_offset);
+		var.StartOffset = bswap_le32(v[i].start_offset);
+		var.Size = bswap_le32(v[i].size);
+		var.uFlags = bswap_le32(v[i].flags);
+		var.DefaultValue = (char*)&rdef->constant_buffer_count + bswap_le32(v[i].default_value_offset);
+		if (is_rd1_1)
+		{
+			var.StartTexture = bswap_le32(v[i].optional->start_texture);
+			var.TextureSize = bswap_le32(v[i].optional->texture_size);
+			var.StartSampler = bswap_le32(v[i].optional->start_sampler);
+			var.SamplerSize = bswap_le32(v[i].optional->sampler_size);
+		}
+		else
+		{
+			var.StartTexture = ~0u;
+			var.TextureSize = 0;
+			var.StartSampler = ~0u;
+			var.SamplerSize = 0;
+		}
+
+		const auto& t = *(dxbc_rdef_type*)((char*)&rdef->constant_buffer_count + bswap_le32(v[i].type_offset));
+		D3D11_SHADER_TYPE_DESC& type = (*types)[i];
+		// FIXME: byte swapping on the 6 16-bit values below?
+		type.Class = (D3D_SHADER_VARIABLE_CLASS)t.type_class;
+		type.Type = (D3D_SHADER_VARIABLE_TYPE)t.type_type;
+		type.Rows = t.rows;
+		type.Columns = t.columns;
+		type.Elements = t.element_count;
+		type.Members = t.member_count;
+		type.Offset = bswap_le32(t.member_offset);
+		type.Name = nullptr;	// FIXME
+	}
+
+	return count;
+}

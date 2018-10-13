@@ -76,6 +76,91 @@ struct dxbc_chunk_signature : public dxbc_chunk_header
 	} elements[];
 };
 
+/* this is always little-endian! */
+struct dxbc_chunk_resource_definition : public dxbc_chunk_header
+{
+	struct rd1_1
+	{
+		unsigned fourcc;	// expected to always be RD11
+		uint32_t unk[6];
+	};
+
+	uint32_t constant_buffer_count;
+	uint32_t constant_buffer_offset;
+	uint32_t resource_binding_count;
+	uint32_t resource_binding_offset;
+	uint32_t target_version_minor : 8;
+	uint32_t target_version_major : 8;
+	uint32_t target_program_type : 16;
+	uint32_t flags;
+	uint32_t creator_offset;
+	/* the following block only exists in SM5.0+ shaders */
+	rd1_1 optional[];
+};
+
+/* this is always little-endian! */
+struct dxbc_rdef_constant_buffer
+{
+	uint32_t name_offset;
+	uint32_t variable_count;
+	uint32_t variable_offset;
+	uint32_t size;
+	uint32_t flags;
+	uint32_t type;
+};
+
+/* this is always little-endian! */
+struct dxbc_rdef_type
+{
+	struct rd1_1
+	{
+		uint32_t parent_type_offset; /* TODO: guess! */
+		uint32_t unk[4];
+	};
+
+	uint32_t type_class : 16;
+	uint32_t type_type : 16;
+	uint32_t rows : 16;
+	uint32_t columns : 16;
+	uint32_t element_count : 16;
+	uint32_t member_count : 16;
+	uint32_t member_offset;
+	rd1_1 optional[];
+};
+
+/* this is always little-endian! */
+struct dxbc_rdef_variable
+{
+	struct rd1_1
+	{
+		int32_t start_texture;
+		int32_t texture_size;
+		int32_t start_sampler;
+		int32_t sampler_size;
+	};
+
+	uint32_t name_offset;
+	uint32_t start_offset;
+	uint32_t size;
+	uint32_t flags;
+	uint32_t type_offset;
+	uint32_t default_value_offset;
+	rd1_1 optional[];
+};
+
+/* this is always little-endian! */
+struct dxbc_rdef_binding
+{
+	uint32_t name_offset;
+	uint32_t input_type;
+	uint32_t return_type;
+	uint32_t dimension;
+	uint32_t sample_count;
+	uint32_t bind_point;
+	uint32_t bind_count;
+	uint32_t flags;
+};
+
 struct dxbc_container
 {
 	const void* data;
@@ -136,6 +221,26 @@ struct _D3D11_SIGNATURE_PARAMETER_DESC;
 typedef struct _D3D11_SIGNATURE_PARAMETER_DESC D3D11_SIGNATURE_PARAMETER_DESC;
 int dxbc_parse_signature(dxbc_chunk_signature* sig,
 						 D3D11_SIGNATURE_PARAMETER_DESC** params);
+
+struct _D3D11_SHADER_BUFFER_DESC;
+typedef struct _D3D11_SHADER_BUFFER_DESC D3D11_SHADER_BUFFER_DESC;
+struct _D3D11_SHADER_INPUT_BIND_DESC;
+typedef struct _D3D11_SHADER_INPUT_BIND_DESC D3D11_SHADER_INPUT_BIND_DESC;
+void dxbc_parse_resource_definition(dxbc_chunk_resource_definition* rdef,
+						 int& buffer_count,
+						 D3D11_SHADER_BUFFER_DESC** buffers,
+						 int& binding_count,
+						 D3D11_SHADER_INPUT_BIND_DESC** bindings,
+						 char** creator = nullptr);
+
+struct _D3D11_SHADER_TYPE_DESC;
+typedef struct _D3D11_SHADER_TYPE_DESC D3D11_SHADER_TYPE_DESC;
+struct _D3D11_SHADER_VARIABLE_DESC;
+typedef struct _D3D11_SHADER_VARIABLE_DESC D3D11_SHADER_VARIABLE_DESC;
+int dxbc_parse_shader_variables(dxbc_chunk_resource_definition* rdef,
+						 unsigned buffer_index,
+						 D3D11_SHADER_TYPE_DESC** types,
+						 D3D11_SHADER_VARIABLE_DESC** variables);
 
 std::pair<void*, size_t> dxbc_assemble(struct dxbc_chunk_header** chunks,
 									   unsigned num_chunks);
