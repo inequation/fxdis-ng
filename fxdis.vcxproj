@@ -92,6 +92,7 @@
     <ClCompile Include="src\dxbc_assemble.cpp" />
     <ClCompile Include="src\dxbc_dump.cpp" />
     <ClCompile Include="src\dxbc_parse.cpp" />
+    <ClCompile Include="src\dxbc_text.cpp" />
     <ClCompile Include="src\sm4_analyze.cpp" />
     <ClCompile Include="src\sm4_dump.cpp" />
     <ClCompile Include="src\sm4_parse.cpp" />

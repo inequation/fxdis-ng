@@ -79,12 +79,6 @@ struct dxbc_chunk_signature : public dxbc_chunk_header
 /* this is always little-endian! */
 struct dxbc_chunk_resource_definition : public dxbc_chunk_header
 {
-	struct rd1_1
-	{
-		unsigned fourcc;	// expected to always be RD11
-		uint32_t unk[6];
-	};
-
 	uint32_t constant_buffer_count;
 	uint32_t constant_buffer_offset;
 	uint32_t resource_binding_count;
@@ -95,7 +89,11 @@ struct dxbc_chunk_resource_definition : public dxbc_chunk_header
 	uint32_t flags;
 	uint32_t creator_offset;
 	/* the following block only exists in SM5.0+ shaders */
-	rd1_1 optional[];
+	struct
+	{
+		unsigned fourcc;	// expected to always be RD11
+		uint32_t unk[6];
+	} optional[];
 };
 
 /* this is always little-endian! */
@@ -112,12 +110,6 @@ struct dxbc_rdef_constant_buffer
 /* this is always little-endian! */
 struct dxbc_rdef_type
 {
-	struct rd1_1
-	{
-		uint32_t parent_type_offset; /* TODO: guess! */
-		uint32_t unk[4];
-	};
-
 	uint32_t type_class : 16;
 	uint32_t type_type : 16;
 	uint32_t rows : 16;
@@ -125,27 +117,31 @@ struct dxbc_rdef_type
 	uint32_t element_count : 16;
 	uint32_t member_count : 16;
 	uint32_t member_offset;
-	rd1_1 optional[];
+	/* the following block only exists in SM5.0+ shaders */
+	struct
+	{
+		uint32_t parent_type_offset; /* TODO: guess! */
+		uint32_t unk[4];
+	} optional[];
 };
 
 /* this is always little-endian! */
 struct dxbc_rdef_variable
 {
-	struct rd1_1
-	{
-		int32_t start_texture;
-		int32_t texture_size;
-		int32_t start_sampler;
-		int32_t sampler_size;
-	};
-
 	uint32_t name_offset;
 	uint32_t start_offset;
 	uint32_t size;
 	uint32_t flags;
 	uint32_t type_offset;
 	uint32_t default_value_offset;
-	rd1_1 optional[];
+	/* the following block only exists in SM5.0+ shaders */
+	struct
+	{
+		int32_t start_texture;
+		int32_t texture_size;
+		int32_t start_sampler;
+		int32_t sampler_size;
+	} optional[];
 };
 
 /* this is always little-endian! */
@@ -159,6 +155,56 @@ struct dxbc_rdef_binding
 	uint32_t bind_point;
 	uint32_t bind_count;
 	uint32_t flags;
+};
+
+/* this is always little-endian! */
+struct dxbc_chunk_statistics : public dxbc_chunk_header
+{
+	uint32_t instruction_count;
+	uint32_t temp_register_count;
+	uint32_t define_count;
+	uint32_t declaration_count;
+	uint32_t float_instruction_count;
+	uint32_t int_instruction_count;
+	uint32_t uint_instruction_count;
+	uint32_t static_flow_control_count;
+	uint32_t dynamic_flow_control_count;
+	uint32_t macro_instruction_count;
+	uint32_t temp_array_count;
+	uint32_t array_instruction_count;
+	uint32_t cut_instruction_count;
+	uint32_t emit_instruction_count;
+	uint32_t texture_normal_instructions;
+	uint32_t texture_load_instructions;
+	uint32_t texture_comp_instructions;
+	uint32_t texture_bias_instructions;
+	uint32_t texture_gradient_instructions;
+	uint32_t mov_instruction_count;
+	uint32_t movc_instruction_count;
+	uint32_t conversion_instruction_count;
+
+	uint32_t unk0;
+
+	uint32_t input_primitive;
+	uint32_t geometry_shader_output_topology;
+	uint32_t geometry_shader_max_output_vertex_count;
+
+	uint32_t unk1[2];
+	uint32_t is_sample_frequency_shader;
+	/* the following block only exists in SM5.0+ shaders */
+	struct
+	{
+		uint32_t unk;
+
+		uint32_t control_points;
+		uint32_t hull_shader_output_primitive;
+		uint32_t hull_shader_partitioning;
+		uint32_t tessellator_domain;
+
+		uint32_t barrier_instructions;
+		uint32_t interlocked_instructions;
+		uint32_t texture_store_instructions;
+	} optional[];
 };
 
 struct dxbc_container
@@ -244,6 +290,14 @@ int dxbc_parse_shader_variables(dxbc_chunk_resource_definition* rdef,
 
 std::pair<void*, size_t> dxbc_assemble(struct dxbc_chunk_header** chunks,
 									   unsigned num_chunks);
+
+extern const char* dxbc_shader_type_names[];
+extern const char* dxbc_shader_input_type_names[];
+extern const char* dxbc_shader_input_type_file_short_names[];
+extern const char* dxbc_shader_return_type_names[];
+extern const char* dxbc_shader_dimension_names[];
+extern const char* dxbc_register_component_type_names[];
+extern const char* dxbc_names[];
 
 #ifdef _MSC_VER
 #pragma warning(pop)
